@@ -1,0 +1,12 @@
+.env
+.venv/
+__pycache__/
+.pytest_cache/
+node_modules/
+dist/
+.hydradb/
+*.tsbuildinfo
+.runtime/
+playwright-report/
+test-results/
+.runtime-e2e/

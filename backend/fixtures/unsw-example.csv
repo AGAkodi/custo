@@ -1,0 +1,3 @@
+dur,spkts,dpkts,sbytes,dbytes,label,attack_cat
+1,100,100,100000001,2,0,Normal
+0.01,100,100,50,20,1,DoS

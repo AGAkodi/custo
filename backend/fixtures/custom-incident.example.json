@@ -1,0 +1,245 @@
+{
+  "incident_id": "custom-example",
+  "events": [
+    {
+      "event_id": "example-0",
+      "timestamp": "2026-01-01T00:00:00Z",
+      "event_type": "login_failed",
+      "source_ip": "198.51.100.10",
+      "account_id": "user-00",
+      "user_agent": "CustosFixture/1.0",
+      "result": "failure",
+      "scenario_id": "custom-example"
+    },
+    {
+      "event_id": "example-1",
+      "timestamp": "2026-01-01T00:00:17Z",
+      "event_type": "login_failed",
+      "source_ip": "198.51.100.11",
+      "account_id": "user-01",
+      "user_agent": "CustosFixture/1.0",
+      "result": "failure",
+      "scenario_id": "custom-example"
+    },
+    {
+      "event_id": "example-2",
+      "timestamp": "2026-01-01T00:00:28Z",
+      "event_type": "login_failed",
+      "source_ip": "198.51.100.12",
+      "account_id": "user-02",
+      "user_agent": "CustosFixture/1.0",
+      "result": "failure",
+      "scenario_id": "custom-example"
+    },
+    {
+      "event_id": "example-3",
+      "timestamp": "2026-01-01T00:00:39Z",
+      "event_type": "login_failed",
+      "source_ip": "198.51.100.13",
+      "account_id": "user-03",
+      "user_agent": "CustosFixture/1.0",
+      "result": "failure",
+      "scenario_id": "custom-example"
+    },
+    {
+      "event_id": "example-4",
+      "timestamp": "2026-01-01T00:00:53Z",
+      "event_type": "login_failed",
+      "source_ip": "198.51.100.14",
+      "account_id": "user-04",
+      "user_agent": "CustosFixture/1.0",
+      "result": "failure",
+      "scenario_id": "custom-example"
+    },
+    {
+      "event_id": "example-5",
+      "timestamp": "2026-01-01T00:01:07Z",
+      "event_type": "login_failed",
+      "source_ip": "198.51.100.15",
+      "account_id": "user-05",
+      "user_agent": "CustosFixture/1.0",
+      "result": "failure",
+      "scenario_id": "custom-example"
+    },
+    {
+      "event_id": "example-6",
+      "timestamp": "2026-01-01T00:01:21Z",
+      "event_type": "login_failed",
+      "source_ip": "198.51.100.16",
+      "account_id": "user-06",
+      "user_agent": "CustosFixture/1.0",
+      "result": "failure",
+      "scenario_id": "custom-example"
+    },
+    {
+      "event_id": "example-7",
+      "timestamp": "2026-01-01T00:01:33Z",
+      "event_type": "login_failed",
+      "source_ip": "198.51.100.17",
+      "account_id": "user-07",
+      "user_agent": "CustosFixture/1.0",
+      "result": "failure",
+      "scenario_id": "custom-example"
+    },
+    {
+      "event_id": "example-8",
+      "timestamp": "2026-01-01T00:01:47Z",
+      "event_type": "login_failed",
+      "source_ip": "198.51.100.18",
+      "account_id": "user-08",
+      "user_agent": "CustosFixture/1.0",
+      "result": "failure",
+      "scenario_id": "custom-example"
+    },
+    {
+      "event_id": "example-9",
+      "timestamp": "2026-01-01T00:01:59Z",
+      "event_type": "login_failed",
+      "source_ip": "198.51.100.19",
+      "account_id": "user-09",
+      "user_agent": "CustosFixture/1.0",
+      "result": "failure",
+      "scenario_id": "custom-example"
+    },
+    {
+      "event_id": "example-10",
+      "timestamp": "2026-01-01T00:02:10Z",
+      "event_type": "login_failed",
+      "source_ip": "198.51.100.20",
+      "account_id": "user-10",
+      "user_agent": "CustosFixture/1.0",
+      "result": "failure",
+      "scenario_id": "custom-example"
+    },
+    {
+      "event_id": "example-11",
+      "timestamp": "2026-01-01T00:02:24Z",
+      "event_type": "login_failed",
+      "source_ip": "198.51.100.21",
+      "account_id": "user-11",
+      "user_agent": "CustosFixture/1.0",
+      "result": "failure",
+      "scenario_id": "custom-example"
+    },
+    {
+      "event_id": "example-12",
+      "timestamp": "2026-01-01T00:02:36Z",
+      "event_type": "login_failed",
+      "source_ip": "198.51.100.10",
+      "account_id": "user-12",
+      "user_agent": "CustosFixture/1.0",
+      "result": "failure",
+      "scenario_id": "custom-example"
+    },
+    {
+      "event_id": "example-13",
+      "timestamp": "2026-01-01T00:02:53Z",
+      "event_type": "login_failed",
+      "source_ip": "198.51.100.11",
+      "account_id": "user-13",
+      "user_agent": "CustosFixture/1.0",
+      "result": "failure",
+      "scenario_id": "custom-example"
+    },
+    {
+      "event_id": "example-14",
+      "timestamp": "2026-01-01T00:03:06Z",
+      "event_type": "login_failed",
+      "source_ip": "198.51.100.12",
+      "account_id": "user-14",
+      "user_agent": "CustosFixture/1.0",
+      "result": "failure",
+      "scenario_id": "custom-example"
+    },
+    {
+      "event_id": "example-15",
+      "timestamp": "2026-01-01T00:03:18Z",
+      "event_type": "login_failed",
+      "source_ip": "198.51.100.13",
+      "account_id": "user-15",
+      "user_agent": "CustosFixture/1.0",
+      "result": "failure",
+      "scenario_id": "custom-example"
+    },
+    {
+      "event_id": "example-16",
+      "timestamp": "2026-01-01T00:03:28Z",
+      "event_type": "login_failed",
+      "source_ip": "198.51.100.14",
+      "account_id": "user-16",
+      "user_agent": "CustosFixture/1.0",
+      "result": "failure",
+      "scenario_id": "custom-example"
+    },
+    {
+      "event_id": "example-17",
+      "timestamp": "2026-01-01T00:03:42Z",
+      "event_type": "login_failed",
+      "source_ip": "198.51.100.15",
+      "account_id": "user-17",
+      "user_agent": "CustosFixture/1.0",
+      "result": "failure",
+      "scenario_id": "custom-example"
+    },
+    {
+      "event_id": "example-18",
+      "timestamp": "2026-01-01T00:03:58Z",
+      "event_type": "login_failed",
+      "source_ip": "198.51.100.16",
+      "account_id": "user-18",
+      "user_agent": "CustosFixture/1.0",
+      "result": "failure",
+      "scenario_id": "custom-example"
+    },
+    {
+      "event_id": "example-19",
+      "timestamp": "2026-01-01T00:04:08Z",
+      "event_type": "login_failed",
+      "source_ip": "198.51.100.17",
+      "account_id": "user-19",
+      "user_agent": "CustosFixture/1.0",
+      "result": "failure",
+      "scenario_id": "custom-example"
+    },
+    {
+      "event_id": "example-20",
+      "timestamp": "2026-01-01T00:04:21Z",
+      "event_type": "login_failed",
+      "source_ip": "198.51.100.18",
+      "account_id": "user-20",
+      "user_agent": "CustosFixture/1.0",
+      "result": "failure",
+      "scenario_id": "custom-example"
+    },
+    {
+      "event_id": "example-21",
+      "timestamp": "2026-01-01T00:04:36Z",
+      "event_type": "login_failed",
+      "source_ip": "198.51.100.19",
+      "account_id": "user-21",
+      "user_agent": "CustosFixture/1.0",
+      "result": "failure",
+      "scenario_id": "custom-example"
+    },
+    {
+      "event_id": "example-22",
+      "timestamp": "2026-01-01T00:04:47Z",
+      "event_type": "login_failed",
+      "source_ip": "198.51.100.20",
+      "account_id": "user-22",
+      "user_agent": "CustosFixture/1.0",
+      "result": "failure",
+      "scenario_id": "custom-example"
+    },
+    {
+      "event_id": "example-23",
+      "timestamp": "2026-01-01T00:05:03Z",
+      "event_type": "login_failed",
+      "source_ip": "198.51.100.21",
+      "account_id": "user-23",
+      "user_agent": "CustosFixture/1.0",
+      "result": "failure",
+      "scenario_id": "custom-example"
+    }
+  ]
+}

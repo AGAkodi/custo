@@ -1,0 +1,42 @@
+services:
+  hydradb-init:
+    image: ghcr.io/hydra-db/hydradb@sha256:ab71d651fefee13ebb23eb56d72316065bdca563ff7587442e07be663f2bf880
+    user: "0:0"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - 'mkdir -p /data/store /data/cache && printf "%s" "$$HYDRADB_PASSWORD" > /data/auth-token && chown -R 10001:10001 /data/store /data/cache /data/auth-token && chmod 600 /data/auth-token'
+    environment:
+      HYDRADB_PASSWORD: ${HYDRADB_PASSWORD:?Set HYDRADB_PASSWORD in .env}
+    volumes:
+      - hydradb-data:/data
+  hydradb:
+    image: ghcr.io/hydra-db/hydradb@sha256:ab71d651fefee13ebb23eb56d72316065bdca563ff7587442e07be663f2bf880
+    user: "10001:10001"
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    depends_on:
+      hydradb-init:
+        condition: service_completed_successfully
+    environment:
+      GRAPH_USAGE_REPORT_ENABLED: "false"
+      CLOUD_PROVIDER: local
+      LOCAL_PATH: /data/store
+      GRAPH_NAMESPACE: default
+      GRAPH_ID: default
+      GRAPH_CELL_ID: cell-0
+      GRAPH_CELLS: cell-0
+      GRAPH_NODE_ID: node-0
+      GRAPH_BOLT_NODE_ADDRESSES: node-0=0.0.0.0:7687
+      GRAPH_ADVERTISED_BOLT_ADDR: 127.0.0.1:17687
+      GRAPH_DATA_CACHE_DIR: /data/cache
+      GRAPH_AUTH_TOKEN_FILE: /data/auth-token
+      GRAPH_ALLOW_PLAINTEXT: "true"
+      RUST_MIN_STACK: "33554432"
+    ports:
+      - "127.0.0.1:17687:7687"
+      - "127.0.0.1:18443:8443"
+      - "127.0.0.1:19091:9090"
+    volumes:
+      - hydradb-data:/data
+volumes:
+  hydradb-data:
