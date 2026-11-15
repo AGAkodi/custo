@@ -14,7 +14,7 @@ from app.lifecycle import lock as lifecycle_lock
 from uuid import uuid4
 from urllib.parse import urlparse
 from app.graph import GraphStore
-from app.memory import retrieve_context, record_assessment, record_custom_events
+from app.memory import retrieve_context, record_assessment, record_custom_events, memory_graph
 from app.detection import assess
 from app.simulator import SCENARIOS, generate
 from app.lifecycle import (active_version, challenge, create_proposal, current_rule, history,
@@ -26,12 +26,15 @@ from app.sigma import baseline_sigma
 from app.soc import hec_envelope, send_hec, validate_hec_url
 from app.types import SecurityEvent
 import json
+import re
 
 settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.graph = GraphStore(settings)
+    if hosted_reset_allowed():
+        await restore_hosted_demo_namespace()
     yield
     app.state.graph.close()
 
@@ -202,18 +205,44 @@ async def graph_neighborhood():
         return {"nodes": nodes, "edges": edges, "limit_per_type": 30}
 
 
+def hosted_reset_allowed():
+    host = urlparse(settings.hydradb_uri).hostname or ""
+    return settings.hosted_demo_reset_enabled and settings.app_env == "production" and host.endswith(".railway.internal")
+
+
+def control_settings():
+    return settings.model_copy(update={"graph_namespace": "custos_demo_control"})
+
+
+async def restore_hosted_demo_namespace():
+    async with memory_graph(control_settings()) as graph:
+        controls = await list_entities(graph, "DemoSessionControl")
+        if controls:
+            newest = max(controls, key=lambda item: item.properties.get("created_at", ""))
+            namespace = newest.properties.get("namespace", "")
+            if re.fullmatch(r"custos_demo_[0-9a-f]{32}", namespace):
+                settings.graph_namespace = namespace
+
+
 @app.post("/api/demo/reset")
 async def reset_demo(x_reviewer_token: str | None = Header(default=None)):
-    """Rotate to a fresh local demo namespace without deleting historical data."""
+    """Rotate the shared demo namespace without deleting historical data."""
     require_reviewer(x_reviewer_token)
-    if settings.app_env != "development" or urlparse(settings.hydradb_uri).hostname not in ("localhost", "127.0.0.1", "::1"):
-        raise HTTPException(status_code=403, detail="Reset is available only for a local development database")
+    local = settings.app_env == "development" and urlparse(settings.hydradb_uri).hostname in ("localhost", "127.0.0.1", "::1")
+    hosted = hosted_reset_allowed()
+    if not local and not hosted:
+        raise HTTPException(status_code=403, detail="Reset is disabled for this environment")
     async with lifecycle_lock:
         namespace = "custos_demo_" + uuid4().hex
-        config_module.RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
-        temp = config_module.SESSION_FILE.with_suffix(".tmp")
-        temp.write_text(json.dumps({"namespace": namespace}), encoding="utf-8")
-        temp.replace(config_module.SESSION_FILE)
+        if hosted:
+            from datetime import datetime, timezone
+            async with memory_graph(control_settings()) as graph:
+                await graph.entities.create("Demo session", "DemoSessionControl", id="demosessioncontrol:" + uuid4().hex, properties={"namespace": namespace, "created_at": datetime.now(timezone.utc).isoformat()})
+        else:
+            config_module.RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
+            temp = config_module.SESSION_FILE.with_suffix(".tmp")
+            temp.write_text(json.dumps({"namespace": namespace}), encoding="utf-8")
+            temp.replace(config_module.SESSION_FILE)
         settings.graph_namespace = namespace
     return {"status": "reset", "namespace": namespace, "previous_data": "retained"}
 

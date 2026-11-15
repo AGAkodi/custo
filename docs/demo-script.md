@@ -1,11 +1,14 @@
-# Local demo
+# Custos judge walkthrough
 
-1. Start HydraDB, backend and frontend using the README. Configure `REVIEWER_TOKEN` in `.env` and restart the backend. Open Lifecycle review, enter the reviewer token and select Reset demo to begin in a fresh namespace. Previous graph data remains stored.
-2. In Incident lab choose Distributed login attempts, run baseline and inspect the benign/no-match assessment.
-3. Reveal the confirmed label, enter the reviewer token and create a proposal. In Lifecycle review inspect the evidence and benign regression controls; approve with a reason.
-4. In Memory graph inspect evidence, proposal, rule and influenced assessments. The diagram is bounded and the full relationship list is available below it.
-5. In Incident lab choose Unseen distributed variation and run adaptive; inspect its rule and memory influence.
-6. Run Evaluation. Explain both the detected attack and the false positive on benign overlapping behavior. The numbers are synthetic and sample size is twelve.
-7. Use rollback in Lifecycle review if you need to return to the baseline; historical records remain.
+Open https://custo-production.up.railway.app/ and sign in with the demo credentials supplied separately. In the workspace, use the reviewer token supplied separately for feedback, approval, and reset. Never publish credentials here.
 
-A silent browser recording is available at `docs/media/custos-demo.webm`. Public deployment and a narrated submission video remain deferred.
+1. Open **Lifecycle review**, enter the reviewer token, and select **Reset demo**. The hosted demo is shared: a reset affects all current visitors. Earlier graph records remain in an older namespace.
+2. In **Incident lab**, choose **Distributed login attempts** and select **Run baseline**. The expected result is benign/monitor with no matching baseline rule: this is the intentional missed attack.
+3. Select **Reveal outcome**. The fixture identifies credential stuffing. Enter the reviewer token and select **Create review proposal**.
+4. On **Lifecycle review**, inspect the proposed thresholds, evidence, and benign regression preview. Approve it with a reason. This is an explicit reviewer action, not automatic activation.
+5. Open **Memory graph** and inspect the incident, evidence, memory, proposal, and rule relationships. The graph comes from HydraDB; the diagram may show only a bounded selection, with a relationship list below it.
+6. Return to **Incident lab**, choose **Unseen distributed variation**, and select **Run adaptive**. Inspect the classification, rule and memory influence in the decision trace. The held-out identities differ from the feedback scenario.
+7. Open **Evaluation** and run the comparison. Explain both detected attacks and benign false positives. The default fixture previously produced four detections and four false positives among eight benign cases; report the actual run, not an assumed result. The twelve incidents are synthetic and do not establish real-world accuracy.
+8. Refresh and revisit the graph and evaluation to check stored results. Reset again only when everyone is finished, because all visitors share the same demo session.
+
+The candidate rule uses bounded feature-derived heuristics, with human review. It is not a general-purpose model trained on arbitrary incidents. The app is a demonstration and does not perform automated security response.

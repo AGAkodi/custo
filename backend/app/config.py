@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     demo_seed: int = 42
     graph_namespace: str = "custos"
     reviewer_token: str = ""
+    hosted_demo_reset_enabled: bool = False
     splunk_hec_url: str = ""
     splunk_hec_token: str = ""
 
