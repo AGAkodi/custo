@@ -10,6 +10,8 @@ test("local demo: reset, learn, inspect graph, evaluate, replay", async ({ page 
   const token = process.env.CUSTOS_E2E_TOKEN;
   if (!token) throw new Error("Set CUSTOS_E2E_TOKEN for the isolated local test server");
   await page.goto("/");
+  await expect(page.getByRole("heading", { name: /Security lessons should last/ })).toBeVisible();
+  await page.getByRole("link", { name: "Explore the demo" }).click();
   await expect(page.getByText("Graph connected")).toBeVisible();
   await accessibility(page);
   await page.getByRole("link", { name: "Lifecycle review" }).click();
@@ -63,6 +65,7 @@ test("local demo: reset, learn, inspect graph, evaluate, replay", async ({ page 
 test("mobile navigation and controls remain usable", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
+  await page.getByRole("link", { name: "Explore the demo" }).click();
   await expect(page.getByRole("heading", { name: "Intelligence that learns." })).toBeVisible();
   await page.getByRole("link", { name: "Incident lab" }).click();
   await expect(page.getByLabel("Choose a scenario")).toBeVisible();
