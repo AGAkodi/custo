@@ -14,7 +14,7 @@ from app.lifecycle import lock as lifecycle_lock
 from uuid import uuid4
 from urllib.parse import urlparse
 from app.graph import GraphStore
-from app.memory import retrieve_context, record_assessment, record_custom_events, memory_graph
+from app.memory import retrieve_context, record_assessment, record_custom_events
 from app.detection import assess
 from app.simulator import SCENARIOS, generate
 from app.lifecycle import (active_version, challenge, create_proposal, current_rule, history,
