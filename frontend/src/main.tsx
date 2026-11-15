@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter, NavLink, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { Activity, ArrowRight, Boxes, CheckCircle2, Database, FileInput, FlaskConical, GitBranch, LayoutDashboard, LockKeyhole, RefreshCw, ShieldCheck } from "lucide-react";
 import "./style.css";
+import "./workspace-editorial.css";
 import { Integrations } from "./Integrations";
 import { Landing } from "./Landing";
 
