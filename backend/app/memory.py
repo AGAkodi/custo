@@ -34,6 +34,48 @@ async def retrieve_context(settings: Settings, query: str) -> str:
         return result.context
 
 
+async def related_incidents(settings, features, limit=5):
+    """Rank evidence-backed prior incidents; unreviewed memories do not drive a decision."""
+    import json
+    from app.types import Features
+
+    dimensions = ("failures", "distinct_ips", "distinct_accounts", "max_failures_per_ip")
+    async with memory_graph(settings) as graph:
+        page = await graph.entities.list(type="ThreatMemory", limit=100)
+        candidates = []
+        for memory in page.items:
+            signature = memory.properties.get("feature_signature")
+            if not signature:
+                continue
+            reference = Features.model_validate_json(signature)
+            comparisons = {}
+            for name in dimensions:
+                observed, prior = getattr(features, name), getattr(reference, name)
+                comparisons[name] = round(min(observed, prior) / max(observed, prior), 4) if max(observed, prior) else 1.0
+            links = await graph.relations.list(from_entity=memory.id, type="SUPPORTED_BY", limit=30)
+            for edge in links.items:
+                evidence = await graph.entities.get(edge.to_entity)
+                if not evidence or evidence.type != "IncidentEvidence":
+                    continue
+                decision_id = evidence.properties.get("decision_id")
+                if not decision_id:
+                    continue
+                source_id = "assessment:" + decision_id
+                provenance = await graph.relations.list(from_entity=edge.to_entity, type="SUPPORTS_REVIEW_OF", to_entity=source_id, limit=1)
+                source = await graph.entities.get(source_id)
+                if not provenance.items or not source:
+                    continue
+                prior = json.loads(source.properties["assessment_json"])
+                candidates.append({"memory_id": memory.id, "evidence_id": evidence.id,
+                                   "incident_id": prior["scenario_id"], "decision_id": decision_id,
+                                   "confirmed_label": evidence.properties.get("label"),
+                                   "similarity": round(sum(comparisons.values()) / len(comparisons), 4),
+                                   "comparisons": comparisons,
+                                   "note": "Related evidence; relevance is not proof of maliciousness or approval."})
+                break
+        return sorted(candidates, key=lambda item: (-item["similarity"], item["memory_id"]))[:limit]
+
+
 async def record_assessment(settings: Settings, assessment) -> None:
     """Store a decision and its scenario relationship; labels remain hidden."""
     async with memory_graph(settings) as graph:

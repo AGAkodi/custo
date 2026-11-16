@@ -48,11 +48,14 @@ def assess(scenario_id: str, events: list[SecurityEvent], memory_context: str = 
             raise ValueError("Active rule has no evidence-backed memory signature")
         dimensions = ("failures", "distinct_ips", "distinct_accounts", "max_failures_per_ip")
         ratios = []
+        comparisons = {}
         for name in dimensions:
             a, b = getattr(features, name), getattr(signature, name)
-            ratios.append(min(a, b) / max(a, b) if max(a, b) else 1.0)
+            ratio = min(a, b) / max(a, b) if max(a, b) else 1.0
+            ratios.append(ratio)
+            comparisons[name] = {"observed": a, "reference": b, "similarity": round(ratio, 4)}
         similarity = sum(ratios) / len(ratios)
-        retrieval = {"memory_id": active_rule["memory_id"], "evidence_id": active_rule["evidence_id"], "similarity": round(similarity, 4), "threshold": 0.6, "applicable": similarity >= 0.6, "method": "mean feature-ratio similarity"}
+        retrieval = {"memory_id": active_rule["memory_id"], "evidence_id": active_rule["evidence_id"], "similarity": round(similarity, 4), "threshold": 0.6, "applicable": similarity >= 0.6, "method": "mean feature-ratio similarity", "comparisons": comparisons}
     if features.success_after_failures:
         classification, action, confidence, rules = "suspicious_login", "escalate", 0.85, ["baseline-success-after-failures-v1"]
         explanation = "A successful login followed at least three failures for the same account in the analysis window."
@@ -62,9 +65,10 @@ def assess(scenario_id: str, events: list[SecurityEvent], memory_context: str = 
     elif active_rule and retrieval["applicable"] and (features.failures >= active_rule["rule"].min_failures
                           and features.distinct_ips >= active_rule["rule"].min_ips
                           and features.distinct_accounts >= active_rule["rule"].min_accounts
-                          and features.max_failures_per_ip <= active_rule["rule"].max_failures_per_ip):
-        classification, action, confidence, rules = "distributed_credential_stuffing", "flag", 0.75, [active_rule["version"]]
-        explanation = "An approved distributed-login rule matched the observed features."
+                          and features.max_failures_per_ip <= active_rule["rule"].max_failures_per_ip
+                          and features.max_accounts_per_ip >= active_rule["rule"].min_accounts_per_ip):
+        classification, action, confidence, rules = active_rule["rule"].kind, "flag", 0.75, [active_rule["version"]]
+        explanation = "An approved authentication rule matched the observed features."
     else:
         classification, action, confidence, rules = "benign", "monitor", 0.55, []
         explanation = "No baseline rule matched; this is not proof that the activity is safe."

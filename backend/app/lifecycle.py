@@ -17,18 +17,27 @@ lock = asyncio.Lock()
 
 
 class CandidateRule(BaseModel):
+    kind: str = Field(default="distributed_credential_stuffing", pattern="^(distributed_credential_stuffing|password_spray)$")
     min_failures: int = Field(ge=1, le=1000)
     min_ips: int = Field(ge=1, le=1000)
     min_accounts: int = Field(ge=1, le=1000)
     max_failures_per_ip: int = Field(ge=1, le=1000)
+    min_accounts_per_ip: int = Field(default=1, ge=1, le=1000)
 
 
-def derive_candidate(features: Features) -> CandidateRule:
+def derive_candidate(features: Features, label="distributed_credential_stuffing") -> CandidateRule:
     """Infer bounded distributed-login thresholds from observed positive evidence.
 
     The fractions are explicit heuristics, not statistical learning or proof of maliciousness.
     """
-    if features.failures < 4 or features.distinct_ips < 2 or features.distinct_accounts < 2:
+    if label == "password_spray":
+        if features.failures < 4 or features.distinct_accounts < 4 or features.max_accounts_per_ip < 4:
+            raise ValueError("Evidence is insufficient for a password-spray candidate")
+        return CandidateRule(kind=label, min_failures=max(4, math.ceil(features.failures * 0.75)),
+                             min_ips=1, min_accounts=max(4, math.ceil(features.distinct_accounts * 0.75)),
+                             max_failures_per_ip=min(1000, features.max_failures_per_ip * 2),
+                             min_accounts_per_ip=max(4, math.ceil(features.max_accounts_per_ip * 0.75)))
+    if label != "distributed_credential_stuffing" or features.failures < 4 or features.distinct_ips < 2 or features.distinct_accounts < 2:
         raise ValueError("Evidence is insufficient for a distributed-login candidate")
     return CandidateRule(
         min_failures=max(1, math.ceil(features.failures * 0.5)),
@@ -41,7 +50,8 @@ def derive_candidate(features: Features) -> CandidateRule:
 def matches(rule, features):
     return (features.failures >= rule.min_failures and features.distinct_ips >= rule.min_ips
             and features.distinct_accounts >= rule.min_accounts
-            and features.max_failures_per_ip <= rule.max_failures_per_ip)
+            and features.max_failures_per_ip <= rule.max_failures_per_ip
+            and features.max_accounts_per_ip >= rule.min_accounts_per_ip)
 
 
 def stamp():
@@ -95,12 +105,41 @@ async def get_proposal(graph, proposal_id):
     return json.loads(ent.properties["data"])
 
 
+async def revise_proposal(settings, proposal_id, rule, actor, reason):
+    """Create a reviewable revision; never modify or activate the original proposal."""
+    async with lock, memory_graph(settings) as graph:
+        original = await get_proposal(graph, proposal_id)
+        transitions = [e for e in await history(graph) if e["proposal_id"] == proposal_id]
+        if any(e["kind"] in ("APPROVED", "REJECTED") for e in transitions):
+            raise ValueError("Only an unreviewed proposal can be revised")
+        if rule.kind != original["confirmed_label"]:
+            raise ValueError("A revision cannot change the confirmed incident type")
+        memory = await graph.entities.get(original["memory_id"])
+        if not memory or not memory.properties.get("feature_signature"):
+            raise ValueError("Original evidence signature is missing")
+        features = Features.model_validate_json(memory.properties["feature_signature"])
+        benign_results = {name: matches(rule, features_for(generate(name, settings.demo_seed))[0])
+                          for name in ("benign", "benign-shared")}
+        regression = {"feedback_matches": matches(rule, features), "benign_matches": any(benign_results.values()),
+                      "feedback_scenario": original["scenario_id"], "benign_results": benign_results}
+        new_id = uuid4().hex
+        revision = {**original, "id": new_id, "rule": rule.model_dump(), "regression": regression,
+                    "created_at": stamp(), "status": "UNDER_REVIEW", "revises": proposal_id,
+                    "revision_actor": actor, "revision_reason": reason}
+        await graph.entities.create("Rule revision " + new_id, "RuleProposal", id="ruleproposal:" + new_id,
+                                    properties={"data": json.dumps(revision)})
+        await ensure_relation(graph, "ruleproposal:" + new_id, "DERIVED_FROM", original["memory_id"])
+        await ensure_relation(graph, "ruleproposal:" + new_id, "REVISES", "ruleproposal:" + proposal_id)
+        await event(graph, "PROPOSED", new_id, actor, reason)
+        return revision
+
+
 async def create_proposal(settings, scenario_id, decision_id, *, confirmed_label=None, evidence_note=None, reviewer=None):
     if scenario_id == "held-out" or scenario_id.startswith("heldout-"):
         raise ValueError("Held-out scenarios cannot be used as feedback")
     if scenario_id not in SCENARIOS and not scenario_id.startswith("custom-"):
         raise LookupError("Incident not found")
-    if scenario_id.startswith("custom-") and (confirmed_label != "distributed_credential_stuffing" or not evidence_note or not reviewer):
+    if scenario_id.startswith("custom-") and (confirmed_label not in ("distributed_credential_stuffing", "password_spray") or not evidence_note or not reviewer):
         raise ValueError("Custom feedback requires an analyst attestation for a supported label")
     async with lock, memory_graph(settings) as graph:
         decision = await graph.entities.get(f"assessment:{decision_id}")
@@ -114,10 +153,10 @@ async def create_proposal(settings, scenario_id, decision_id, *, confirmed_label
             if old["decision_id"] == decision_id:
                 return old
         label = SCENARIOS[scenario_id][1] if scenario_id in SCENARIOS else confirmed_label
-        if label != "distributed_credential_stuffing" or assessment["classification"] != "benign":
-            raise ValueError("This feedback does not identify the supported distributed detection gap")
+        if label not in ("distributed_credential_stuffing", "password_spray") or assessment["classification"] != "benign":
+            raise ValueError("This feedback does not identify a supported detection gap")
         feedback_features = Features.model_validate(assessment["features"])
-        rule = derive_candidate(feedback_features)
+        rule = derive_candidate(feedback_features, label)
         benign_results = {}
         for benign_id in ("benign", "benign-shared"):
             benign_features, _ = features_for(generate(benign_id, settings.demo_seed))
@@ -127,7 +166,7 @@ async def create_proposal(settings, scenario_id, decision_id, *, confirmed_label
         data = {"id": proposal_id, "decision_id": decision_id, "scenario_id": scenario_id, "confirmed_label": label, "rule": rule.model_dump(), "regression": regression, "created_at": stamp(), "memory_id": f"threatmemory:{proposal_id}", "evidence_id": f"incidentevidence:{proposal_id}", "status": "UNDER_REVIEW", "source": "synthetic fixture" if scenario_id in SCENARIOS else "reviewer attestation", "reviewer": reviewer, "evidence_note": evidence_note}
         facts = {"entities": [
             {"id": data["evidence_id"], "type": "IncidentEvidence", "name": f"Confirmed evidence {proposal_id}", "properties": {"scenario_id": scenario_id, "decision_id": decision_id, "label": label, "event_ids": json.dumps(assessment["evidence_event_ids"]), "source": "synthetic fixture" if scenario_id in SCENARIOS else "reviewer attestation", "reviewer": reviewer or "", "note": evidence_note or ""}},
-            {"id": data["memory_id"], "type": "ThreatMemory", "name": f"Distributed login lesson {proposal_id}", "properties": {"claim": "Many sources target many accounts with few failures per source", "scope": "authentication events within ten minutes", "status": "UNDER_REVIEW", "feature_signature": feedback_features.model_dump_json(), "signature_version": 1}},
+            {"id": data["memory_id"], "type": "ThreatMemory", "name": f"Authentication lesson {proposal_id}", "properties": {"claim": f"Confirmed {label} authentication activity", "scope": "authentication events within ten minutes", "status": "UNDER_REVIEW", "feature_signature": feedback_features.model_dump_json(), "signature_version": 1}},
             {"id": f"ruleproposal:{proposal_id}", "type": "RuleProposal", "name": f"Rule proposal {proposal_id}", "properties": {"data": json.dumps(data)}},
         ], "relations": [
             {"from_entity": data["memory_id"], "type": "SUPPORTED_BY", "to_entity": data["evidence_id"]},

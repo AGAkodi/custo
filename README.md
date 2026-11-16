@@ -14,11 +14,15 @@ The hosted demo requires a shared login. Reviewer actions require a separate tok
 4. A held-out variation with different IP addresses and account IDs is assessed using that rule and memory.
 5. The evaluation compares the baseline and adaptive versions on identical malicious and benign fixtures, including a difficult benign counterexample.
 
-Custos uses deterministic heuristics and bounded thresholds for the supported distributed-login pattern. Scores are illustrative; it is not a general incident-learning system and does not perform automated response.
+Custos uses deterministic heuristics and bounded thresholds for distributed-login and analyst-attested password-spray patterns. Reviewers can revise a proposed rule and its revision is recorded separately; approval is still required and the small regression suite still gates activation. Only one rule version can be active at a time. Scores are illustrative; it is not a general incident-learning system and does not perform automated response.
+
+For sanitized custom incidents, reviewers can also look up related graph memories. Matches follow evidence links to prior assessments and show a feature similarity score. They are advisory, may include unapproved proposals, and do not themselves influence a decision. The search examines at most 100 memories. An approved rule and its supporting graph memory can influence the detector.
 
 ## Results and limitations
 
 In a hosted twelve-incident synthetic evaluation, the baseline produced TP 0, FP 0, TN 8, FN 4; the adaptive rule produced TP 4, FP 4, TN 4, FN 0. The adaptive false-positive rate was 50% across eight benign incidents. This small, template-based sample does not establish real-world accuracy. During the hosted check, graph records remained visible after one HydraDB restart, and a subsequent decision cited the same rule and memory. See [evaluation methodology and results](docs/evaluation.md).
+
+An offline evaluator can compare a frozen rule against independently collected, labeled authentication incidents and rejects overlapping incident IDs, IPs and accounts between the supplied splits. No independent real-world evaluation or measured false-positive reduction has been completed yet. The synthetic benign overlap cases remain important counterexamples.
 
 The hosted reset is reviewer-protected and starts a fresh **shared** namespace while retaining earlier data. It affects all visitors, not individual judges. Keep one backend worker: lifecycle changes are multiple graph operations protected by an in-process lock, not an atomic distributed transaction. A storage update error has also been observed on an older local database volume; the brief hosted restart test is not a long-term durability guarantee.
 
@@ -66,6 +70,8 @@ Prerequisites: Docker Desktop or Docker Engine, Python 3.12, and Node.js 22. Com
 
 Open the URL printed by Vite, normally `http://localhost:5173`, and choose **Explore the demo**. The Vite server proxies `/api` to the API on port 8000. The local Docker database is bound to localhost and persists in a named volume. `GET /health` checks API liveness; `GET /ready` checks graph access. The API documentation is available at `http://localhost:8000/docs`.
 
+For a password-free local judge demo, set `PASSWORDLESS_DEMO_ENABLED=true` in the API environment before starting it. Each browser receives an automatic, HttpOnly session cookie and its own graph namespace; reset starts a fresh namespace only for that browser. Reviewer actions need no token in this mode. Use synthetic data: namespaces are retained after reset, and clearing the browser cookie starts another workspace. This mode only activates in development with a localhost HydraDB URI; it is not enabled by this setting in production. Live Splunk delivery is disabled in this mode, although the offline preview remains available.
+
 Optional: from `backend`, run `python -m app.seed` to insert the small foundation graph. The separate `python -m app.spike` reproduces the documented graph integration check.
 
 ## Tests
@@ -80,6 +86,8 @@ npm run build
 ```
 
 Graph integration tests write to the configured HydraDB database. Against an **isolated test instance**, set `CUSTOS_INTEGRATION=1` before running pytest. Browser tests additionally require the API and Vite to be running against an isolated database and runtime directory; set matching test-only `REVIEWER_TOKEN` and `CUSTOS_E2E_TOKEN`, then run `npm run test:e2e` from `frontend`. These tests reset and change demo state. See [CI configuration](.github/workflows/ci.yml) for the setup.
+
+The latest local verification passed 37 backend tests, including the password-free two-session graph test; four existing protected-mode browser tests; the password-free two-browser test; Ruff; and the frontend build. Two dependency deprecation warnings were reported. The password-free browser test uses `playwright.passwordless.config.ts` and expects its isolated API and frontend on ports 8006 and 5176 respectively; it must run with password-free mode enabled and an isolated HydraDB instance.
 
 ## Dataset and SOC extensions
 

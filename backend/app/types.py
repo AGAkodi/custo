@@ -50,7 +50,7 @@ class Assessment(BaseModel):
     decision_id: str
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     scenario_id: str
-    classification: Literal["benign", "single_source_brute_force", "distributed_credential_stuffing", "suspicious_login"]
+    classification: Literal["benign", "single_source_brute_force", "distributed_credential_stuffing", "password_spray", "suspicious_login"]
     confidence: float = Field(ge=0, le=1)
     action: Literal["allow", "monitor", "flag", "escalate"]
     matched_rules: list[str]
